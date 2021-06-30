@@ -1,241 +1,110 @@
-import "hashes/sha256/1536bit.code" as sha256of1536
-import "hashes/sha256/1024bit.code" as sha256of1024
-import "hashes/sha256/512bit.code" as sha256of512
-import "utils/pack/unpack128.code" as unpack128
-import "utils/pack/nonStrictUnpack256.code" as unpack256
+import "utils/pack/u32/nonStrictUnpack256.zok" as unpack
+import "utils/pack/u32/pack256.zok" as pack
+import "hashes/sha256/1024bit.zok" as sha256of1024
 
-def concatenate128x256x256(field[128] a, field[256] b, field[256] c)->(field[640]):
-	return [...a, ...b, ...c]
+// amountA: the amount contained in the commitmentA (public)
+// nullifierA: the nullifier for the commitmentA (public)
+// rootA: the Merkle root of commitmentA (public)
+// secretKey: the secret key for the commitmentA and commitmentB (private)
+// randomA: token random nonce for the commitmentA (private)
+// pathA: the Merkle path for the commitmentA (private)
 
-def concatenate256x256(field[256] a, field[256] b)->(field[512]):
-	return [...a, ...b]
+// amountB: the amount contained in the commitmentB (public)
+// nullifierB: the nullifier for the commitmentB (public)
+// rootB: the Merkle root of commitmentB (public)
+// randomB: token random nonce for the commitmentB (private)
+// pathB: the Merkle path for the commitmentB (private)
 
-def concatenate256x256x256x256x256(field[256] a, field[256] b, field[256] c, field[256] d, field[256] e)->(field[1280]):
-	return [...a, ...b, ...c, ...d, ...e]
+// - amountC:  the amount contained in the commitmentC (public)
+// - commitmentC: the commitment (public)
+// - publicKeyC: the public key of the commitmentC derived by hashing the Secret Key Sk of the commitmentC (private)
+// - randomC: token random nonce (private)
 
-def orderedConcatenate216x216(field order, field[216] pathNode, field[216] siblingNode)->(field[432]):
-	field[216] left = if order == 0 then pathNode else siblingNode fi
-	field[216] right = if order == 0 then siblingNode else pathNode fi
-	return [...left, ...right]
+// - amountD:  the amount contained in the commitmentD (public)
+// - commitmentD: the commitment (public)
+// - randomD: token random nonce (private)
 
-def shaPad432To512(field[432] a)->(field[512]):
-	return [...a, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,1,0,1,1,0,0,0,0]
+def main(field[10] publicInput, private field secretKey, private field randomA, private field[32] pathA, private field randomB, private field[32] pathB, private field publicKeyC, private field randomC, private field randomD)->bool:
+	
+	// public input information 
+	field amountA = publicInput[0]
+    field nullifierA = publicInput[1]
+    field rootA = publicInput[2]
 
-// Provides the padding (only!) for a 256-bit message.
-def shaPad256To512()->(field[256]):
-	return [1,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	1,	0,	0,	0,	0,	0,	0,	0,	0]
+	field amountB = publicInput[3]
+    field nullifierB = publicInput[4]
+    field rootB = publicInput[5]
 
-// Provides the padding (only!) for a 512-bit message.
-def shaPad512To1024()->(field[512]):
-	return [1,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,    0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	1,	0,	0,	0,	0,	0,	0,	0,	0,	0]
+	field amountC = publicInput[6]
+	field commitmentC = publicInput[7]
 
-// Provides the padding (only!) for a 768-bit message.
-def shaPad768To1024()->(field[256]):
-	return [1,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	1,	1,	0,	0,	0,	0,	0,	0,	0,	0]
+	field amountD = publicInput[8]
+	field commitmentD = publicInput[9]
 
-// Provides the padding (only!) for a 640-bit message.
-def shaPad640To1024()->(field[384]):
-	return [1,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	1,	0,	1,	0,	0,	0,	0,	0,	0,	0]
+	// check nullifierA
+	// nullifier = H(amount|secretKey|random)
+	u32[8] amountAU32 = unpack(amountA)
+	u32[8] secretKeyU32 = unpack(secretKey)
+	u32[8] randomAU32 = unpack(randomA)
+	field temp = 0
+	u32[8] padding = unpack(temp)
 
-// Provides the padding (only!) for a 1280-bit message.
-def shaPad1280To1536()->(field[256]):
-	return [1,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	1,	0,	1,	0,	0,	0,	0,	0,	0,	0,	0]
+	u32[8] nullifierAResultU32 = sha256of1024(amountAU32, secretKeyU32, randomAU32, padding)
+	field nullifierAResult = pack(nullifierAResultU32)
 
-// unpacks a siblingPath's node to bits, ready for sha-ing:
-def unpackSiblingNode(field siblingNode)->(field[216]):
-	field[256] siblingNodeBits = unpack256(siblingNode)
-	return siblingNodeBits[40..256]
+	// publicKey = H(secretKey)
+	u32[8] publicKeyU32 = sha256of1024(secretKeyU32, padding, padding, padding)
 
-// unpack a field[2] (assumed to be two 128-bit values) into 256 bits
-def unpack2xx128To256(field[2] input)->(field[256]):
-	field[128] left = unpack128(input[0])
-	field[128] right = unpack128(input[1])
-  field[256] output = [...left, ...right]
-  return output
+	// commitment = H(amount|publicKey|random)
+	u32[8] commitmentAU32 = sha256of1024(amountAU32, publicKeyU32, randomAU32, padding)
 
-// Inputs for main are:
-// Alice's original coins are valueC and valueD
-
-// valueC - the amount contained in commitmentC (private)
-// secretKeyA -  Alice's secret key (private)
-// saltC - the salt for commitmentC (private)
-// pathC0-pathC31 - the Merkle path for commitmentC (private)
-
-// valueD - the amount contained in commitmentD (private)
-// saltD - the salt for commitmentD (private)
-// pathD0-pathD31 - the Merkle path for commitmentD (private)
-
-// nullifierC - the nullifier for commitmentC (public)
-// nullifierD - the nullifier for commitmentD (public)
-
-// New commitments created by Alice:
-// valueE - the amount in commitmentE (private)
-// publicKeyB - Bob's public key (private)
-// saltE - the serial number for coin E (private)
-// commitmentE - the commitment corresponding to valueE (public)
-
-// valueF - the amount in commitment_F (private)
-// saltF - the serial number for coin F (private)
-// commitmentF - the commitment corresponding to valueF (public)
-
-// root - the Merkle root (public)
-
-// publicInputHash = hash(root, nullifierC, nullifierD, commitmentE, commitmentF)
-
-// Note - we now use 216 bits for the Merkle tree calculation. This is because 432 is the biggest input we can use for sha256 if we want 432/2 to end on a byte boundary for easier Solidity computation without needing to do full rounds and we need to concatenate the two child hashes. We consider 216 bits to be sufficiently secure. The nullifier, commitment and root retain 256-bit security.
-
-// Each field element passed to main() can be at most 128bits, to make use of unpack128() so most variables occupy two fields (except the publicInputHash, which we maximize as 248-bits)
-
-def main(field publicInputHash, private field valueC, private field[2] secretKeyA, private field[2] saltC, private field[32] pathC, private field orderC, private field valueD, private field[2] saltD, private field[32] pathD, private field orderD, private field[2] nullifierC, private field[2] nullifierD, private field valueE, private field[2] publicKeyB, private field[2] saltE, private field[2] commitmentE, private field valueF, private field[2] saltF, private field[2] commitmentF, private field[2] root)->():
-
-	// Unpack the inputs of main() to 128 bits. We'll unpack each field to its own 128 bit string for simplicity for now. Later efficiencies could be made by grouping some inputs.
-
-	field[256] publicInputHashBits = unpack256(publicInputHash)
-
-	field[128] valueCBits = unpack128(valueC)
-
-	field[256] secretKeyABits = unpack2xx128To256(secretKeyA)
-
-	field[256] saltCBits = unpack2xx128To256(saltC)
-
-	field[128] valueDBits = unpack128(valueD)
-
-	field[256] saltDBits = unpack2xx128To256(saltD)
-
-	field[256] nullifierCBits = unpack2xx128To256(nullifierC)
-
-	field[256] nullifierDBits = unpack2xx128To256(nullifierD)
-
-	field[128] valueEBits = unpack128(valueE)
-
-	field[256] publicKeyBBits = unpack2xx128To256(publicKeyB)
-
-	field[256] saltEBits = unpack2xx128To256(saltE)
-
-	field[256] commitmentEBits = unpack2xx128To256(commitmentE)
-
-	field[128] valueFBits = unpack128(valueF)
-
-	field[256] saltFBits = unpack2xx128To256(saltF)
-
-	field[256] commitmentFBits = unpack2xx128To256(commitmentF)
-
-	field[256] rootBits = unpack2xx128To256(root)
-
-	field[128] orderCBits = unpack128(orderC)
-	field[128] orderDBits = unpack128(orderD)
-
-
-	field[256] padding256To512 = shaPad256To512()
-	field[512] padding512To1024 = shaPad512To1024()
-	field[256] padding768To1024 = shaPad768To1024()
-	field[384] padding640To1024 = shaPad640To1024()
-	field[256] padding1280To1536 = shaPad1280To1536()
-
-
-
-	// First we construct a proof that the nullifiers nulliferC and nullifierD are correct:
-	// H(saltC|secretKeyA) = nullifierC.
-	// H(saltD|secretKeyA) = nullifierD.
-
-	field[512] preimage512 = concatenate256x256(saltCBits, secretKeyABits)
-	field[256] nullifierCBitsCheck = sha256of1024(preimage512[0..256], preimage512[256..512], padding512To1024[0..256], padding512To1024[256..512])
-
-	preimage512 = concatenate256x256(saltDBits, secretKeyABits)
-	field[256] nullifierDBitsCheck = sha256of1024(preimage512[0..256], preimage512[256..512], padding512To1024[0..256], padding512To1024[256..512])
-
-
-
-	// H(valueC|publicKeyA|saltA) = commitmentC is in the Merkle Tree
-
-	// Calculation of publicKeyA from H(secretKeyA)
-	field[256] publicKeyABits = sha256of512(secretKeyABits, padding256To512)
-
-
-	// And calculation of commitmentC
-	field[640] preimage640 = concatenate128x256x256(valueCBits, publicKeyABits, saltCBits)
-
-	field[1024] preimage1024 = [...preimage640, ...padding640To1024]
-
-	field[256] hash = sha256of1024(preimage1024[0..256], preimage1024[256..512], preimage1024[512..768], preimage1024[768..1024]) // commitmentC
-
-	// concatenate siblings and hash all the way up to the root
+	// Prove that the commitment is in the Merkle tree
+	u32[8] hashA = commitmentAU32
 	for field i in 0..32 do
-		field j = 31-i
-		field k = 127-i
-		preimage512 = shaPad432To512(orderedConcatenate216x216(orderCBits[k], hash[40..256], unpackSiblingNode(pathC[j])))
-		hash = sha256of512(preimage512[0..256], preimage512[256..512])
+		hashA = sha256of1024(hashA, unpack(pathA[i]), padding, padding)
 	endfor
-	// save the computed root:
-	field[256] rootCBitsCheck = hash
+	field rootAHash = pack(hashA)
 
-	// H(valueD|publicKeyA|saltA) = commitmentD is in the Merkle Tree
+	// check nullifierB
+	// nullifier = H(amount|secretKey|random)
+	u32[8] amountBU32 = unpack(amountB)
+	u32[8] randomBU32 = unpack(randomB)
 
-	// Calculation of the commitment
-	preimage640 = concatenate128x256x256(valueDBits, publicKeyABits, saltDBits)
+	u32[8] nullifierBResultU32 = sha256of1024(amountBU32, secretKeyU32, randomBU32, padding)
+	field nullifierBResult = pack(nullifierBResultU32)
 
-	preimage1024 = [...preimage640, ...padding640To1024]
+	// commitment = H(amount|publicKey|random)
+	u32[8] commitmentBU32 = sha256of1024(amountBU32, publicKeyU32, randomBU32, padding)
 
-	hash = sha256of1024(preimage1024[0..256], preimage1024[256..512], preimage1024[512..768], preimage1024[768..1024]) // commitmentD
-
-	// concatenate siblings and hash all the way up to the root
+	// Prove that the commitment is in the Merkle tree
+	u32[8] hashB = commitmentBU32
 	for field i in 0..32 do
-		field j = 31-i
-		field k = 127-i
-		preimage512 = shaPad432To512(orderedConcatenate216x216(orderDBits[k], hash[40..256], unpackSiblingNode(pathD[j])))
-		hash = sha256of512(preimage512[0..256], preimage512[256..512])
-  endfor
-	// save the computed root:
-	field[256] rootDBitsCheck = hash
+		hashB = sha256of1024(hashB, unpack(pathB[i]), padding, padding)
+	endfor
+	field rootBHash = pack(hashB)
+
+	// check commitmentC
+	u32[8] amountCU32 = unpack(amountC)
+	u32[8] publicKeyCU32 = unpack(publicKeyC)
+	u32[8] randomCU32 = unpack(randomC)
+
+	// commitment = H(amount|publicKey|random)
+	u32[8] commitmentCresultU32 = sha256of1024(amountCU32, publicKeyCU32, randomCU32, padding)
+	field commitmentCresult = pack(commitmentCresultU32)
+
+	// check commitmentD
+	u32[8] amountDU32 = unpack(amountD)
+	u32[8] randomDU32 = unpack(randomD)
+
+	// commitment = H(amount|publicKey|random)
+	u32[8] commitmentDresultU32 = sha256of1024(amountDU32, publicKeyU32, randomDU32, padding)
+	field commitmentDresult = pack(commitmentDresultU32)
+
+	// check sum 
+	// A + B = C + D
+	field sumIn = amountA + amountB
+	field sumOut = amountC + amountD
+
+	return rootA == rootAHash && nullifierA == nullifierAResult && rootB == rootBHash && nullifierB == nullifierBResult && commitmentC == commitmentCresult && commitmentD == commitmentDresult && sumIn == sumOut
 
 
-	// Next up - prove that valueE is in commitmentE and valueF is in commitmentF
-
-	// Work out commitmentE = H(valueE|publicKeyB|saltE)
-	preimage640 = concatenate128x256x256(valueEBits, publicKeyBBits, saltEBits)
-
-	preimage1024 = [...preimage640, ...padding640To1024]
-
-	field[256] commitmentEBitsCheck = sha256of1024(preimage1024[0..256], preimage1024[256..512], preimage1024[512..768], preimage1024[768..1024]) // commitmentE
-
-
-	// And commitmentF
-	preimage640 = concatenate128x256x256(valueFBits, publicKeyABits, saltFBits)
-
-	preimage1024 = [...preimage640, ...padding640To1024]
-
-	field[256] commitmentFBitsCheck = sha256of1024(preimage1024[0..256], preimage1024[256..512], preimage1024[512..768], preimage1024[768..1024]) // commitmentF
-
-
-	// Sum check C+D = E+F - we don't want anyone to create money.
-
-	field sumIn = valueC + valueD
-	field sumOut = valueE + valueF
-
-
-	// Now check the inputs:
-
-	nullifierCBits == nullifierCBitsCheck
-	nullifierDBits == nullifierDBitsCheck
-	rootBits == rootCBitsCheck
-	rootBits == rootDBitsCheck
-	commitmentEBits == commitmentEBitsCheck
-	commitmentFBits == commitmentFBitsCheck
-	sumIn == sumOut
-
-	// Overflow prevention:
-	valueCBits[0] == 0
-	valueDBits[0] == 0
-	valueEBits[0] == 0
-	valueFBits[0] == 0
-
-
-	// Check that the 'public inputs' hash to the publicInputHash:
-	field[1280] preimage1280 = concatenate256x256x256x256x256(rootBits, nullifierCBits, nullifierDBits, commitmentEBits, commitmentFBits)
-
-	field[256] publicInputHashBitsCheck = sha256of1536(preimage1280[0..256], preimage1280[256..512], preimage1280[512..768], preimage1280[768..1024], preimage1280[1024..1280], padding1280To1536[0..256])
-
-	publicInputHashBits[8..256] == publicInputHashBitsCheck[8..256]
-
-
-	return
