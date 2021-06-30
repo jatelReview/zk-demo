@@ -103,17 +103,17 @@ public:
     }
 
     // burn
-    void burn(const std::vector<std::uint256_t> &inputs, const Proof &proof, const bytes &owner)
+    void burn(const std::vector<std::uint256_t> &inputs, const Proof &proof, 
+        const platon::Address &payTo, const bytes &owner)
     {
         // verify
         platon::Address verify = GetVerify();
         bool result = verify.VerifyTx(inputs, proof);
 
         // public input information
-        std::uint256_t payTo = input[0];
-        std::uint256_t value = input[1];
-        std::uint256_t nc = input[2];
-        std::uint256_t inputRoot = input[3];
+        std::uint256_t value = input[0];
+        std::uint256_t nc = input[1];
+        std::uint256_t inputRoot = input[2];
 
         // check
         privacy_assert(roots.self().end() != roots.self().find(inputRoot), "invalid merkle tree root");

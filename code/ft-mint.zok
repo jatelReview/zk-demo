@@ -1,0 +1,29 @@
+import "utils/pack/u32/nonStrictUnpack256.zok" as unpack
+import "utils/pack/u32/pack256.zok" as pack
+import "hashes/sha256/1024bit.zok" as sha256of1024
+
+// Inputs for main are:
+// - amount (public) is the coin value
+// - commitment (public) is the commitment
+// - publicKey (private) is the public key of the commitment derived by hashing the Secret Key Sk of the commitment. IT IS KEPT PRIVATE FOR ZK!!!
+// - random (private) token random nonce
+
+def main(field[2] publicInput, private field publicKey, private field random) -> bool:
+
+	// public input information 
+	field amount = publicInput[0]
+	field commitment = publicInput[1]
+
+	// commitment = H(amount|publicKey|random)
+	u32[8] amountU32 = unpack(amount)
+	u32[8] publicKeyU32 = unpack(publicKey)
+	u32[8] randomU32 = unpack(random)
+	field temp = 0
+	u32[8] padding = unpack(temp)
+
+	// sha256 
+	u32[8] resultU32 = sha256of1024(amountU32, publicKeyU32, randomU32, padding)
+	field result = pack(resultU32)
+
+	// Check commitment
+	return commitment == result
