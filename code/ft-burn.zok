@@ -1,6 +1,37 @@
-import "utils/pack/u32/nonStrictUnpack256.zok" as unpack
-import "utils/pack/u32/pack256.zok" as pack
-import "hashes/sha256/1024bit.zok" as sha256of1024
+import "hashes/mimc7/constants.zok" as constants
+
+def mimc7Hash(field x_in, field k) -> field:
+    field[91] c = constants()
+    field r = 0
+    for field i in 0..91 do
+        field t = if i == 0 then k+x_in else k + r + c[i] fi
+        field t2 = t * t
+        field t4 = t2 * t2
+        r = t2 * t4 * t
+    endfor
+    return r + x_in
+
+def mimc1(field one) -> field:
+    field r = 0
+    field h = mimc7Hash(one, r)
+    r = r + one + h
+    return r
+
+def mimc2(field[2] input) -> field:
+    field r = 0
+    for field i in 0..2 do
+        field h = mimc7Hash(input[i], r)
+        r = r + input[i] + h
+    endfor
+    return r
+
+def mimc3(field[3] input) -> field:
+    field r = 0
+    for field i in 0..3 do
+        field h = mimc7Hash(input[i], r)
+        r = r + input[i] + h
+    endfor
+    return r
 
 // Inputs for main are:
 // amount: the amount contained in the commitment (public)
@@ -17,28 +48,23 @@ def main(field[3] publicInput, private field secretKey, private field random, pr
     field nullifier = publicInput[1]
     field root = publicInput[2]
 
-	// nullifier = H(amount|secretKey|random)
-	u32[8] amountU32 = unpack(amount)
-	u32[8] secretKeyU32 = unpack(secretKey)
-	u32[8] randomU32 = unpack(random)
-	field temp = 0
-	u32[8] padding = unpack(temp)
-
-	u32[8] nullifierResultU32 = sha256of1024(amountU32, secretKeyU32, randomU32, padding)
-	field nullifierResult = pack(nullifierResultU32)
+	// nullifier = H(secretKey|random)
+	field[2] input2 = [secretKey, random]
+	field nullifierResult = mimc2(input2)
 
 	// publicKey = H(secretKey)
-	u32[8] publicKeyU32 = sha256of1024(secretKeyU32, padding, padding, padding)
+	field publicKey = mimc1(secretKey)
 
 	// commitment = H(amount|publicKey|random)
-	u32[8] commitmentU32 = sha256of1024(amountU32, publicKeyU32, randomU32, padding)
+	field[3] input3 = [amount, publicKey, random]
+	field commitment = mimc3(input3)
 
 	// Prove that the commitment is in the Merkle tree
-	u32[8] hash = commitmentU32
+	field rootHash = commitment
 	for field i in 0..32 do
-		hash = sha256of1024(hash, unpack(path[i]), padding, padding)
+		input2 = [rootHash, path[i]]
+		rootHash = mimc2(input2)
 	endfor
-	field rootHash = pack(hash)
 
 	return root == rootHash && nullifier == nullifierResult 
 

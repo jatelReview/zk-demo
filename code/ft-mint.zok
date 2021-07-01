@@ -1,6 +1,23 @@
-import "utils/pack/u32/nonStrictUnpack256.zok" as unpack
-import "utils/pack/u32/pack256.zok" as pack
-import "hashes/sha256/1024bit.zok" as sha256of1024
+import "hashes/mimc7/constants.zok" as constants
+
+def mimc7Hash(field x_in, field k) -> field:
+    field[91] c = constants()
+    field r = 0
+    for field i in 0..91 do
+        field t = if i == 0 then k+x_in else k + r + c[i] fi
+        field t2 = t * t
+        field t4 = t2 * t2
+        r = t2 * t4 * t
+    endfor
+    return r + x_in
+
+def mimc3(field[3] input) -> field:
+    field r = 0
+    for field i in 0..3 do
+        field h = mimc7Hash(input[i], r)
+        r = r + input[i] + h
+    endfor
+    return r
 
 // Inputs for main are:
 // - amount (public) is the coin value
@@ -15,15 +32,8 @@ def main(field[2] publicInput, private field publicKey, private field random) ->
 	field commitment = publicInput[1]
 
 	// commitment = H(amount|publicKey|random)
-	u32[8] amountU32 = unpack(amount)
-	u32[8] publicKeyU32 = unpack(publicKey)
-	u32[8] randomU32 = unpack(random)
-	field temp = 0
-	u32[8] padding = unpack(temp)
-
-	// sha256 
-	u32[8] resultU32 = sha256of1024(amountU32, publicKeyU32, randomU32, padding)
-	field result = pack(resultU32)
+	field[3] input = [amount, publicKey, random]
+	field commitmentResult = mimc3(input)
 
 	// Check commitment
-	return commitment == result
+	return commitment == commitmentResult
