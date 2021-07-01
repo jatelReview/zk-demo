@@ -206,13 +206,13 @@ using namespace platon::crypto::bn256::g16;
 CONTRACT Verify : public platon::Contract{
     public:
         ACTION void init(){}
-        CONST bool VerifyTx(const std::vector<std::uint256_t> &inputs, const Proof &proof, TransferType tranferType){
+        CONST bool VerifyTx(const std::vector<std::uint256_t> &inputs, const Proof &proof, uint8_t tranferType){
             switch (tranferType) {
-                case TransferType::MINT:
+                case MINT:
                     return mint::Verifier::Verify(inputs, proof);
-                case TransferType::TRANSFER:
+                case TRANSFER:
                     return transfer::Verifier::Verify(inputs, proof);
-                case TransferType::BURN:
+                case BURN:
                     return burn::Verifier::Verify(inputs, proof);
             }
 

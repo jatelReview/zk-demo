@@ -1,8 +1,14 @@
-
 #include <string>
 #include "common.hpp"
 
+using namespace platon;
+
 CONTRACT ARC20 : public Contract {
+ private:
+    // define: _from, _to, _value
+  PLATON_EVENT2(TransferEvent, const Address&, const Address&, u128);
+  // define: _owner, _spender, _value
+  PLATON_EVENT2(ApprovalEvent, const Address&, const Address&, u128);
  public:
   ACTION void init(const std::string &token_name,
                    const std::string &token_symbol, u128 initial_amount,
