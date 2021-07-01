@@ -1,0 +1,37 @@
+{
+  "inputs": [
+    {
+      "name": "publicInput",
+      "public": true,
+      "type": "array",
+      "components": {
+        "size": 3,
+        "type": "field"
+      }
+    },
+    {
+      "name": "secretKey",
+      "public": false,
+      "type": "field"
+    },
+    {
+      "name": "random",
+      "public": false,
+      "type": "field"
+    },
+    {
+      "name": "path",
+      "public": false,
+      "type": "array",
+      "components": {
+        "size": 32,
+        "type": "field"
+      }
+    }
+  ],
+  "outputs": [
+    {
+      "type": "bool"
+    }
+  ]
+}

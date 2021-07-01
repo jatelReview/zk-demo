@@ -1,0 +1,66 @@
+{
+  "inputs": [
+    {
+      "name": "publicInput",
+      "public": true,
+      "type": "array",
+      "components": {
+        "size": 10,
+        "type": "field"
+      }
+    },
+    {
+      "name": "secretKey",
+      "public": false,
+      "type": "field"
+    },
+    {
+      "name": "randomA",
+      "public": false,
+      "type": "field"
+    },
+    {
+      "name": "pathA",
+      "public": false,
+      "type": "array",
+      "components": {
+        "size": 32,
+        "type": "field"
+      }
+    },
+    {
+      "name": "randomB",
+      "public": false,
+      "type": "field"
+    },
+    {
+      "name": "pathB",
+      "public": false,
+      "type": "array",
+      "components": {
+        "size": 32,
+        "type": "field"
+      }
+    },
+    {
+      "name": "publicKeyC",
+      "public": false,
+      "type": "field"
+    },
+    {
+      "name": "randomC",
+      "public": false,
+      "type": "field"
+    },
+    {
+      "name": "randomD",
+      "public": false,
+      "type": "field"
+    }
+  ],
+  "outputs": [
+    {
+      "type": "bool"
+    }
+  ]
+}

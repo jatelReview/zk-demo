@@ -19,3 +19,25 @@ inline void privacy_assert_aux(bool cond, const char *cond_str, unsigned line,
     ::platon_revert();
   }
 }
+
+namespace platon {
+namespace crypto {
+namespace bn256 {
+namespace g16 {
+
+struct Proof {
+    G1 a;
+    G2 b;
+    G1 c;
+};
+
+}  // namespace g16
+}  // namespace bn256
+}  // namespace crypto
+}  // namespace platon
+
+enum calss TransferType: uint8_t{
+  MINT,
+  TRANSFER,
+  BURN
+};

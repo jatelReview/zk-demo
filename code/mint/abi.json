@@ -1,0 +1,28 @@
+{
+  "inputs": [
+    {
+      "name": "publicInput",
+      "public": true,
+      "type": "array",
+      "components": {
+        "size": 2,
+        "type": "field"
+      }
+    },
+    {
+      "name": "publicKey",
+      "public": false,
+      "type": "field"
+    },
+    {
+      "name": "random",
+      "public": false,
+      "type": "field"
+    }
+  ],
+  "outputs": [
+    {
+      "type": "bool"
+    }
+  ]
+}

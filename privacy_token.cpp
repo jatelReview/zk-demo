@@ -1,5 +1,8 @@
 #include "platon/platon.hpp"
 #include "platon/crypto/bn256/bn256.hpp"
+#include "common.hpp"
+
+using namespace platon::crypto::bn256::g16;
 
 CONTRACT PrivacyArc20 : public platon::Contract
 {
@@ -32,6 +35,10 @@ public:
     {
         // verify
         platon::Address verify = GetVerify();
+        auto res = platon::platon_call_with_return_value<bool>(verify, u128(0), ::platon_gas(),
+             "VerifyTx", inputs, proof, TransferType::MINT);
+        privacy_assert(res.second && res.first, "mint operation zk verification failed");
+
         bool result = verify.VerifyTx(inputs, proof);
 
         // public input information
@@ -61,7 +68,9 @@ public:
     {
         // verify
         platon::Address verify = GetVerify();
-        bool result = verify.VerifyTx(inputs, proof);
+        auto res = platon::platon_call_with_return_value<bool>(verify, u128(0), ::platon_gas(),
+             "VerifyTx", inputs, proof, TransferType::TRANSFER);
+        privacy_assert(res.second && res.first, "transfer operation zk verification failed");
 
         // public input information
         std::uint256_t nc = input[0];
@@ -108,7 +117,9 @@ public:
     {
         // verify
         platon::Address verify = GetVerify();
-        bool result = verify.VerifyTx(inputs, proof);
+        auto res = platon::platon_call_with_return_value<bool>(verify, u128(0), ::platon_gas(),
+             "VerifyTx", inputs, proof, TransferType::BURN);
+        privacy_assert(res.second && res.first, "burn operation zk verification failed");
 
         // public input information
         std::uint256_t value = input[0];
@@ -222,4 +233,4 @@ private:
     platon::StorageType<"nullifiers"_n, std::set<platon::256>> nullifiers;              //store nullifiers
 };
 
-PLATON_DISPATCH(PrivacyArc20, (init))
+PLATON_DISPATCH(PrivacyArc20, (init)(mint)(transfer)(burn))
