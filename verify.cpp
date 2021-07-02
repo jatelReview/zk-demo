@@ -186,7 +186,7 @@ class Verifier {
     return 0;
   }
 
-  static static bool VerifyTx(const std::array<std::uint256_t,2> &a, const std::array<std::array<std::uint256_t,2>,2> &b,
+  static bool VerifyTx(const std::array<std::uint256_t,2> &a, const std::array<std::array<std::uint256_t,2>,2> &b,
                 const std::array<std::uint256_t,2> &c, const std::vector<std::uint256_t> &inputs) {
     Proof proof{G1{a[0], a[1]}, G2(b[0][1], b[0][0], b[1][1], b[1][0]),
                 G1{c[0], c[1]}};

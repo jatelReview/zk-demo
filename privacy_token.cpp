@@ -4,6 +4,7 @@
 #include "common.hpp"
 
 using namespace platon::crypto::bn256::g16;
+using namespace platon::hash::mimc;
 
 CONTRACT PrivacyArc20 : public platon::Contract
 {
