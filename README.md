@@ -14,7 +14,6 @@ PlatON 提供了通用零知识证明 zk-SNARKs 框架，此框架核心动作�
 用户可以根据具体的业务场景，利用 PlatON 的零知识框架生成验证合约，不同的值设置不同的 witness，生成相应的 proof， 发到验证合约验证 proof。
 
 
-
 ## 密码学组件
 
 hash 算法支持： mimc， poseidon，rescue zk友好的 hash 算法。
@@ -54,7 +53,7 @@ owner: pk 加密 （pk，r）二元组的结果，客户端用 sk 解密，解�
 
 commitment： （c，pk，r）三元组的 hash 值。
 
-nullifier： （c，sk，r）三元组的 hash 值。
+nullifier： （sk，r）二元组的 hash 值。
 
 proof： Zokrates 工具，每次输入相应 private input 和 public input，加上对应验证合约的 proving key 一起生成。
 
@@ -92,11 +91,11 @@ public input 为 金额 c，（c，pk，r）三元组的 hash 值
 
 private input 为 sk， r， merkle path。
 
-public input 为 金额 c，（c，sk，r）三元组的 hash 值， merkle root。
+public input 为 金额 c，（sk，r）二元组的 hash 值， merkle root。
 
 1. 命令行侧生成 public input（c，pk，r）三元组生成的hash值即新的 commitment。pk 加密 （pk，r）二元组。
 
-   命令行侧生成（c，sk，r）三元组的 hash 值即nullifier。
+   命令行侧生成（sk，r）二元组的 hash 值即nullifier。
 
    根据命令行维护的 MerkleTree，通过 private input 生成 proof。
 
@@ -116,9 +115,9 @@ public input 为 金额 c，（c，sk，r）三元组的 hash 值， merkle root
 
 private input 为 sk， r， merkle path。
 
-public input 为 金额 c，（c，sk，r）三元组的 hash 值， merkle root。
+public input 为 金额 c，（sk，r）二元组的 hash 值， merkle root。
 
-1. 命令行侧生成（c，sk，r）三元组的 hash 值即nullifier。
+1. 命令行侧生成（sk，r）二元组的 hash 值即nullifier。
 
    根据命令行维护的 MerkleTree，通过 private input 的值 sk， r， merkle path生成 proof。
 
